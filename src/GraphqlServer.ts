@@ -20,9 +20,9 @@ export default class GraphqlServer<
   C extends IAnyMemberObject,
   U extends IAnyMemberObject,
   > {
-  express?: Express
-  apollo?: ApolloServer
-  server?: Server
+  private _express?: Express
+  private _apollo?: ApolloServer
+  private _server?: Server
   async start(options: IGraphqlServerOptions<C> = {}){
     const {
       root = 'src',
@@ -47,7 +47,7 @@ export default class GraphqlServer<
       port = DEFAULT_PORT
     } = options
 
-    this.express = express()
+    this._express = express()
 
     const schema = await typeGraphql.buildSchema({
       resolvers: utils.getAllResolvers(path.join(root, graphqlResolvers)),
@@ -60,7 +60,7 @@ export default class GraphqlServer<
       await Mongoose.connect(mongoDBUrl)
     }
 
-    this.apollo = new ApolloServer({
+    this._apollo = new ApolloServer({
       schema, playground: graphqlPlayground,
       formatError: formatErrorFactory(errorOptions),
       context: ({request}): IContext => {
@@ -72,17 +72,17 @@ export default class GraphqlServer<
       },
     })
 
-    this.apollo.applyMiddleware({app: this.express})
+    this._apollo.applyMiddleware({app: this._express})
 
-    this.server = await this._listen(port)
+    this._server = await this._listen(port)
   }
 
   private _listen(port: number): Promise<Server>{
     return new Promise((resolve, reject) => {
-      if(!this.express){
+      if(!this._express){
         return reject()
       }
-      const server = this.express.listen(port, () => {
+      const server = this._express.listen(port, () => {
         resolve(server)
       })
     })
@@ -90,17 +90,17 @@ export default class GraphqlServer<
 
   private _close(): Promise<void>{
     return new Promise<void>((resolve, reject) => {
-      if(!this.server){
+      if(!this._server){
         return reject()
       }
-      this.server.close(() => {
+      this._server.close(() => {
         resolve()
       })
     })
   }
 
   async stop(timeout?: number): Promise<void>{
-    if(!this.server){
+    if(!this._server){
       return Promise.resolve()
     }
     if(timeout){

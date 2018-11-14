@@ -6,7 +6,7 @@
   "author": "BichiKim <bichi@live.co.kr>",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpileOnly src/index.ts"
+    "dev": "ts-node-dev --respawn --transpileOnly build/dev.ts"
   },
   "dependencies": {
     "apollo-server": "^2.2.2",
