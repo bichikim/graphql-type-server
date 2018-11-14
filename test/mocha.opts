@@ -1,0 +1,2 @@
+-r build/mocha.js
+test/**/*.spec.ts
