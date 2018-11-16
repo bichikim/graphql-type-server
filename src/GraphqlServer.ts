@@ -10,10 +10,13 @@ import contextJwtFactory from './context-jwt-factory'
 import Mongoose from 'mongoose'
 import formatErrorFactory from './format-error'
 import {Server} from 'http'
+import appRootPath from 'app-root-path'
+import consola from 'consola'
+import {GraphQLUpload} from 'graphql-upload'
 const DEFAULT_PORT = 4000
-const DEFAULT_GRAPHQL_RESOLVERS = 'resolvers'
+const DEFAULT_GRAPHQL_RESOLVERS = 'graphql'
 const DEFAULT_GRAPHQL_SCHEMA_FILE_PATH = 'schema.gql'
-const DEFAULT_MONGODB_SCHEMAS = 'schema.gql'
+const DEFAULT_MONGODB_SCHEMAS = 'mongodb'
 const DEFAULT_AUTH_ACCESS_TOKEN_NAME = 'access-token-name'
 
 export default class GraphqlServer<
@@ -49,30 +52,52 @@ export default class GraphqlServer<
 
     this._express = express()
 
-    const schema = await typeGraphql.buildSchema({
-      resolvers: utils.getAllResolvers(path.join(root, graphqlResolvers)),
-      emitSchemaFile: path.resolve(__dirname, graphqlSchemaFilePath),
-      authChecker: authCheckerFactory<IContext<C>, IUserContext<U>>(),
-    })
-
-    if(mongoDBUrl){
-      utils.installMongooseSchema(utils.getAllMongooseSchemas(path.join(root, mongoDBSchemas)))
-      await Mongoose.connect(mongoDBUrl)
+    const schemasPath = path.join(root, mongoDBSchemas)
+    const schemas = utils.getAllMongooseSchemas(schemasPath)
+    if(schemas && Object.keys(schemas).length > 0){
+      utils.installMongooseSchema(schemas)
+    }else{
+      consola.warn(`There is no mongoDB schemas ${schemasPath}`)
     }
 
-    this._apollo = new ApolloServer({
-      schema, playground: graphqlPlayground,
-      formatError: formatErrorFactory(errorOptions),
-      context: ({request}): IContext => {
-        return {
-          ...context,
-          accessToken: utils.getAccessToken(request, authAccessTokenName),
-          jwt: contextJwtFactory(jwtOptions),
-        }
-      },
-    })
+    if(mongoDBUrl){
+      try{
+        await Mongoose.connect(mongoDBUrl)
+      }catch{
+        consola.error(`There is no MongoDB "${mongoDBUrl}"`)
+      }
+    }else{
+      consola.warn(`There is no mongoDB Url`)
+    }
 
-    this._apollo.applyMiddleware({app: this._express})
+    const resolversPath = path.join(root, graphqlResolvers)
+    const resolvers = utils.getAllResolvers(resolversPath)
+
+    if(resolvers && resolvers.length > 0){
+      const schema = await typeGraphql.buildSchema({
+        resolvers,
+        emitSchemaFile: appRootPath.resolve(graphqlSchemaFilePath),
+        authChecker: authCheckerFactory<IContext<C>, IUserContext<U>>(),
+      })
+
+
+      this._apollo = new ApolloServer({
+        resolvers: {Upload: GraphQLUpload},
+        schema, playground: graphqlPlayground,
+        formatError: formatErrorFactory(errorOptions),
+        context: ({request}): IContext => {
+          return {
+            ...context,
+            accessToken: utils.getAccessToken(request, authAccessTokenName),
+            jwt: contextJwtFactory(jwtOptions),
+          }
+        },
+      })
+
+      this._apollo.applyMiddleware({app: this._express})
+    }else{
+      consola.warn(`There is no graphql resolvers "${resolversPath}"`)
+    }
 
     this._server = await this._listen(port)
   }

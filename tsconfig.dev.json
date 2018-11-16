@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // 빌드 환경
+    "module": "commonjs",
+    "target": "es2016"
+  },
+  "include": [
+    "src/**/*.ts",
+    "lib/**/*.ts",
+    "types/**/*.d.ts"
+  ]
+}

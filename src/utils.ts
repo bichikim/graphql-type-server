@@ -16,19 +16,29 @@ export function getAccessToken(req: Request, accessTokenName: string = 'access-t
   return req.cookies && req.cookies[accessToken]
 }
 
-export function getAllMongooseSchemas(_path: string) {
+export function getAllMongooseSchemas(_path: string): {[schema: string]: any} | undefined{
   if(__mongooseSchemas){
     return __mongooseSchemas
   }
-  __mongooseSchemas = getAllTs(_path)
+  try{
+    __mongooseSchemas = getAllTs(_path)
+  }catch{
+    return
+  }
+
   return __mongooseSchemas
 }
 
-export function getAllResolvers(_path: string): any[]{
+export function getAllResolvers(_path: string): any[] | undefined{
   if(__modules){
     return __modules
   }
-  __modules = _.values(getAllTs(_path))
+  try{
+    __modules = _.values(getAllTs(_path))
+  }catch{
+    return
+  }
+
   return __modules
 }
 
@@ -44,7 +54,7 @@ export function getAllTs(_path: string): {[key: string]: any} {
     }
   })
 }
-export function installMongooseSchema(schemas){
+export function installMongooseSchema(schemas: {[schema: string]: any}){
   const installedKeys = Object.keys(Mongoose.models)
   const schemaKeys = Object.keys(schemas)
   const willInstallKeys = _.xor(

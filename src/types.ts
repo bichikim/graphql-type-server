@@ -1,5 +1,5 @@
 import {ApolloError} from 'apollo-server'
-import * as jwt from 'src/jwt'
+import {SignOptions, VerifyOptions} from 'src/jwt'
 
 export interface IAnyMemberObject {
   [key: string]: any
@@ -23,8 +23,8 @@ export interface IJwtOptions {
   key?: string
   expiresIn?: number | string
   refreshExpiresIn?: number | string
-  signOptions?: jwt.SignOptions
-  verifyOptions?: jwt.VerifyOptions
+  signOptions?: SignOptions
+  verifyOptions?: VerifyOptions
 }
 
 export interface IErrorOptions {
